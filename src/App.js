@@ -2,8 +2,20 @@ import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
 
+import  SampleApiClient from 'sample-api-client';
+
 class App extends Component {
   render() {
+    const api = new SampleApiClient.ItemsApi();
+    api.apiClient.basePath = '/v1';
+
+    const opts = {};
+    api.listItems(opts).then(() => {
+      console.log('API called successfully.');
+    }, (error) => {
+      console.error(error);
+    });
+
     return (
       <div className="App">
         <header className="App-header">
