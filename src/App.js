@@ -1,40 +1,45 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import Auth from '@aws-amplify/auth';
 
-import  SampleApiClient from 'sample-api-client';
+import React from 'react';
 
-class App extends Component {
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './index.css';
+
+import { withAuthenticator } from 'aws-amplify-react';
+import { Container } from 'reactstrap';
+
+import Header from './components/Header';
+import Items from './components/Items';
+
+class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {};
+  }
+
+  componentDidMount() {
+    const welcomeUser = (data) => {
+      this.setState({ email: data.idToken.payload.email });
+    };
+
+    Auth
+      .currentSession()
+      .then(welcomeUser)
+      .catch((err) => {
+        console.log(err)
+      });
+  }
+
   render() {
-    const api = new SampleApiClient.ItemsApi();
-    api.apiClient.basePath = '/v1';
-
-    const opts = {};
-    api.listItems(opts).then(() => {
-      console.log('API called successfully.');
-    }, (error) => {
-      console.error(error);
-    });
-
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-      </div>
+      <>
+        <Header/>
+        <Container className="application-content">
+          <Items />
+        </Container>
+      </>
     );
   }
 }
 
-export default App;
+export default withAuthenticator(App, { includeGreetings: true });
