@@ -1,5 +1,3 @@
-import Auth from '@aws-amplify/auth';
-
 import React from 'react';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -15,19 +13,6 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {};
-  }
-
-  componentDidMount() {
-    const welcomeUser = (data) => {
-      this.setState({ email: data.idToken.payload.email });
-    };
-
-    Auth
-      .currentSession()
-      .then(welcomeUser)
-      .catch((err) => {
-        console.log(err)
-      });
   }
 
   render() {

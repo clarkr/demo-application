@@ -8,7 +8,11 @@ class ApiService {
   }
 
   _makeRefreshedRequest(makeRequest, ...params) {
-    return Auth.currentSession().then(() => makeRequest.call(this.client, ...params));
+    return Auth.currentSession().then((authData) => {
+      const apiClientInstance = SampleApiClient.ApiClient.instance;
+      apiClientInstance.authentications.AuthToken.apiKey = authData.idToken.jwtToken;
+      return makeRequest.call(this.client, ...params);
+    });
   }
 
   getAll(model) {
