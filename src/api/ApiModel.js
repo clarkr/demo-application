@@ -45,6 +45,18 @@ class ApiModel {
       this._sync.bind(this)
     );
   }
+
+  static create(data) {
+    return this.apiService.create(this.apiPath, data);
+  }
+
+  destroy() {
+    return this.apiService.destroy(this.constructor.apiPath, this._param('id'));
+  }
+
+  static get(id) {
+    return this.apiService.get(this.apiPath, id);
+  }
 }
 
 export default ApiModel;

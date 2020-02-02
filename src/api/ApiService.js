@@ -22,6 +22,18 @@ class ApiService {
   update(model, id, data) {
     return this._makeRefreshedRequest(this.client[`${model}IdPut`], id, data);
   }
+
+  create(model, data) {
+    return this._makeRefreshedRequest(this.client[`${model}Post`], data);
+  }
+
+  destroy(model, id) {
+    return this._makeRefreshedRequest(this.client[`${model}IdDelete`], id);
+  }
+
+  get(model, id) {
+    return this._makeRefreshedRequest(this.client[`${model}IdGet`], id);
+  }
 }
 
 export default ApiService;
