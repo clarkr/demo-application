@@ -20,18 +20,6 @@ class ApiModel {
     return this.constructor.fields;
   }
 
-  get id() {
-    return this._param('id');
-  }
-
-  get title() {
-    return this._param('title');
-  }
-
-  get content() {
-    return this._param('content');
-  }
-
   get uniqueKey() {
     return `${this.constructor.apiPath}-${this.id}`;
   }
