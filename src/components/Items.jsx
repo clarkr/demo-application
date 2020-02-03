@@ -2,6 +2,7 @@ import React from 'react';
 import _ from 'lodash';
 
 import ItemModel from '../api/ItemModel';
+import AddItemButton from './AddItemButton';
 
 import ReactDataGrid from "react-data-grid";
 
@@ -14,11 +15,16 @@ class Items extends React.Component {
 
     this.onGridRowsUpdated = this.onGridRowsUpdated.bind(this);
     this.loadData = this.loadData.bind(this);
+    this.handleItemAdded = this.handleItemAdded.bind(this);
+  }
+
+  handleItemAdded() {
+    this.setState({ items: ItemModel.all });
   }
 
   loadData() {
     return ItemModel.getAll().then((items) => {
-      this.setState({ items });
+      this.setState({ items: ItemModel.all });
     }, (error) => {
       console.error(error);
     });
@@ -44,13 +50,16 @@ class Items extends React.Component {
 
   render() {
     return (
-      <ReactDataGrid
-        columns={this.columns}
-        rowGetter={i => this.state.items[i]}
-        rowsCount={this.state.items.length}
-        onGridRowsUpdated={this.onGridRowsUpdated}
-        enableCellSelect={true}
-      />
+      <>
+        <AddItemButton onItemAdded={this.handleItemAdded} />
+        <ReactDataGrid
+          columns={this.columns}
+          rowGetter={i => this.state.items[i]}
+          rowsCount={this.state.items.length}
+          onGridRowsUpdated={this.onGridRowsUpdated}
+          enableCellSelect={true}
+        />
+      </>
     );
   }
 }

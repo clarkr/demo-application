@@ -7,6 +7,7 @@ class ApiModel {
   }
 
   static apiService = new ApiService();
+  static all = [];
 
   get apiService() {
     return this.constructor.apiService;
@@ -33,7 +34,11 @@ class ApiModel {
   }
 
   static getAll() {
-    return this.apiService.getAll(this.apiPath).then(this._parseModels.bind(this));
+    const parseModels = (_data) => {
+      this.all.push(...this._parseModels(_data));
+      return this.all;
+    };
+    return this.apiService.getAll(this.apiPath).then(parseModels.bind(this));
   }
 
   _sync(data) {
@@ -47,7 +52,11 @@ class ApiModel {
   }
 
   static create(data) {
-    return this.apiService.create(this.apiPath, data);
+    return this.apiService.create(this.apiPath, data).then((_data) => {
+      const model = new this(_data);
+      this.all.push(model);
+      return model;
+    });
   }
 
   destroy() {

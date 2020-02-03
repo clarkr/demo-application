@@ -20,7 +20,6 @@ class ItemModel extends ApiModel {
   get content() {
     return this._param('content');
   }
-
 }
 
 export default ItemModel;
