@@ -1,10 +1,12 @@
 import React from 'react';
 import _ from 'lodash';
 
+import Item from './Item';
+
 import ItemModel from '../api/ItemModel';
 import AddItemButton from './AddItemButton';
 
-import ReactDataGrid from "react-data-grid";
+import { Table } from 'reactstrap';
 
 class Items extends React.Component {
   constructor(props) {
@@ -15,10 +17,10 @@ class Items extends React.Component {
 
     this.onGridRowsUpdated = this.onGridRowsUpdated.bind(this);
     this.loadData = this.loadData.bind(this);
-    this.handleItemAdded = this.handleItemAdded.bind(this);
+    this.handleCollectionChange = this.handleCollectionChange.bind(this);
   }
 
-  handleItemAdded() {
+  handleCollectionChange() {
     this.setState({ items: ItemModel.all });
   }
 
@@ -49,16 +51,29 @@ class Items extends React.Component {
   };
 
   render() {
+    const headerStyle = { width: `${100 / this.columns.length + 1}%` };
     return (
       <>
-        <AddItemButton onItemAdded={this.handleItemAdded} />
-        <ReactDataGrid
-          columns={this.columns}
-          rowGetter={i => this.state.items[i]}
-          rowsCount={this.state.items.length}
-          onGridRowsUpdated={this.onGridRowsUpdated}
-          enableCellSelect={true}
-        />
+        <AddItemButton onItemAdded={this.handleCollectionChange} />
+        <Table className='table-striped'>
+          <thead>
+            <tr>
+              {this.columns.map((column) =>
+                <th style={headerStyle} key={`header-${column.key}`} >{column.key}</th>
+              )}
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {this.state.items.map((item) =>
+              <Item
+                item={item}
+                onItemRemoved={this.handleCollectionChange}
+                key={item.uniqueKey}
+              />
+            )}
+          </tbody>
+        </Table>
       </>
     );
   }

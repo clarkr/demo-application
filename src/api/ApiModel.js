@@ -60,7 +60,10 @@ class ApiModel {
   }
 
   destroy() {
-    return this.apiService.destroy(this.constructor.apiPath, this._param('id'));
+    return this.apiService.destroy(this.constructor.apiPath, this._param('id')).then(() => {
+      _.remove(this.constructor.all, { id: this.id });
+      return this;
+    });
   }
 
   static get(id) {

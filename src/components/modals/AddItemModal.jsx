@@ -25,6 +25,7 @@ class AddItemButton extends React.Component {
     }).then(() => {
       toggle();
       onItemAdded();
+      this.setState({ titleValue: '', contentValue: '' });
     });
   }
 
