@@ -9,3 +9,16 @@
 .hidden {
   visibility: hidden;
 }
+
+.editable-value {
+  cursor: pointer;
+}
+
+.table-title {
+  padding: 1em;
+  padding-left: 0;
+  color: #aaa;
+  font-weight: 700;
+  font-size: smaller;
+  text-transform: uppercase;
+}

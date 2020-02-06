@@ -1,9 +1,6 @@
 import React from 'react';
 
 import { Col, Container, Jumbotron, Row } from 'reactstrap';
-import { FaQuestionCircle } from 'react-icons/fa'
-
-import Explanation from './explinations/Explanation';
 
 class Header extends React.Component {
   constructor(props) {
@@ -26,17 +23,18 @@ class Header extends React.Component {
             <Row>
               <Col>
                 <h1>Sample Application</h1>
-                <p>
-                  A sample application that demonstrates compentency across multiple parts of a web
-                  application. It is designed to provide trivial functionality. The intent is to
-                  demonstrate a solid base on top of which an enterprise grade web application could
-                  evolve. <FaQuestionCircle onClick={this.toggleModal} />
+                <p className="lead">
+                  A demo app which provides a safe, low risk space to try out new tools and
+                  techniques.
+                </p>
+                <p className="lead">
+                 Read <a href="http://robertclark.info/demo.html">this</a> for more
+                 information.
                 </p>
               </Col>
             </Row>
           </Container>
         </Jumbotron>
-        <Explanation display={this.state.displayModal} toggle={this.toggleModal} />
       </>
     );
   }

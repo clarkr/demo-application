@@ -57,9 +57,13 @@ class ItemValue extends React.Component {
     this.props.onClick(undefined);
   }
 
+  get editable() {
+    return this.props.field.editable;
+  }
+
   render() {
     if(
-      this.props.field.editable &&
+      this.editable &&
       this.props.editing
     ) {
       return (
@@ -77,7 +81,7 @@ class ItemValue extends React.Component {
       );
     } else {
       return (
-        <td onClick={this.handleClick}>
+        <td onClick={this.handleClick} className={this.editable ? 'editable-value' : ''}>
             {this.state.value}
         </td>
       );

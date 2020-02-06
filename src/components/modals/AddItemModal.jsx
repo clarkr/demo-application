@@ -49,7 +49,7 @@ class AddItemButton extends React.Component {
                 type="title"
                 name="title"
                 id="title-value"
-                placeholder="title"
+                placeholder="Today's Errands"
                 value={this.state.titleValue}
                 onChange={this.handleTitleChange}
               />
@@ -60,7 +60,7 @@ class AddItemButton extends React.Component {
                 type="content"
                 name="content"
                 id="content-value"
-                placeholder="content"
+                placeholder="Pick up drycleaning, take the dog for a walk."
                 value={this.state.contentValue}
                 onChange={this.handleContentChange}
               />

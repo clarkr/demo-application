@@ -6,13 +6,13 @@ import Item from './Item';
 import ItemModel from '../api/ItemModel';
 import AddItemButton from './AddItemButton';
 
-import { Table } from 'reactstrap';
+import { Alert, Table } from 'reactstrap';
 
 class Items extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = { items: [] };
+    this.state = { items: [], loading: true };
     this.itemModel = new ItemModel();
 
     this.onGridRowsUpdated = this.onGridRowsUpdated.bind(this);
@@ -26,7 +26,7 @@ class Items extends React.Component {
 
   loadData() {
     return ItemModel.getAll().then((items) => {
-      this.setState({ items: ItemModel.all });
+      this.setState({ items: ItemModel.all, loading: false });
     }, (error) => {
       console.error(error);
     });
@@ -54,12 +54,19 @@ class Items extends React.Component {
     const headerStyle = { width: `${100 / this.columns.length + 1}%` };
     return (
       <>
-        <AddItemButton onItemAdded={this.handleCollectionChange} />
+        <div className='table-title'>Items</div>
+        { this.state.items.length === 0 && !this.state.loading ?
+          <Alert color='primary'>
+            Use this table to manage all your items. An item can be anything with a title and
+            content. Click the 'Add Item' button to get started.
+          </Alert> :
+          '' 
+        }
         <Table className='table-striped'>
           <thead>
             <tr>
               {this.columns.map((column) =>
-                <th style={headerStyle} key={`header-${column.key}`} >{column.key}</th>
+                <th style={headerStyle} key={`header-${column.key}`}>{_.startCase(column.key)}</th>
               )}
               <th></th>
             </tr>
@@ -74,6 +81,7 @@ class Items extends React.Component {
             )}
           </tbody>
         </Table>
+        { !this.state.loading ? <AddItemButton onItemAdded={this.handleCollectionChange} /> : '' }
       </>
     );
   }
