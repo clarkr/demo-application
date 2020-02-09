@@ -11,39 +11,38 @@ class Item extends React.Component {
 
     this.state = { hideDeleteIcon: true };
 
-    this.handleMouse = this.handleMouse.bind(this);
+    this.handleMouseEnter = this.handleMouseEnter.bind(this);
+    this.handleMouseLeave = this.handleMouseLeave.bind(this);
     this.handleDeleteClick = this.handleDeleteClick.bind(this);
     this.handleValueClick = this.handleValueClick.bind(this);
-    this.resize = this.resize.bind(this);
   }
 
   handleDeleteClick() {
     this.props.item.destroy().then(this.props.onItemRemoved);
   }
 
-  handleMouse() {
-    this.setState({ hideDeleteIcon: !this.state.hideDeleteIcon });
+  handleMouseEnter() {
+    if (this.state.hideDeleteIcon) {
+      this.setState({ hideDeleteIcon: !this.state.hideDeleteIcon });
+    }
+  }
+
+  handleMouseLeave() {
+    if (!this.state.hideDeleteIcon) {
+      this.setState({ hideDeleteIcon: !this.state.hideDeleteIcon });
+    }
   }
 
   handleValueClick(field) {
     this.setState({ editing: field });
   }
 
-  componentDidMount() {
-    window.addEventListener('resize', this.resize);
-    this.resize();
-  }
-
-  resize() {
-    this.setState({ mobile: window.innerWidth <= 760 });
-  }
-
   render() {
     const item = this.props.item;
     return (
       <tr
-        onMouseEnter={this.handleMouse}
-        onMouseLeave={this.handleMouse}
+        onMouseEnter={this.handleMouseEnter}
+        onMouseLeave={this.handleMouseLeave}
       >
         {item.constructor.fields.map((field) =>
           <ItemValue
