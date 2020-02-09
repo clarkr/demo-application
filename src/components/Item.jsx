@@ -14,6 +14,7 @@ class Item extends React.Component {
     this.handleMouse = this.handleMouse.bind(this);
     this.handleDeleteClick = this.handleDeleteClick.bind(this);
     this.handleValueClick = this.handleValueClick.bind(this);
+    this.resize = this.resize.bind(this);
   }
 
   handleDeleteClick() {
@@ -26,6 +27,15 @@ class Item extends React.Component {
 
   handleValueClick(field) {
     this.setState({ editing: field });
+  }
+
+  componentDidMount() {
+    window.addEventListener('resize', this.resize);
+    this.resize();
+  }
+
+  resize() {
+    this.setState({ mobile: window.innerWidth <= 760 });
   }
 
   render() {
