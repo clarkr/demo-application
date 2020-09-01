@@ -1,34 +1,40 @@
+import _ from 'lodash';
 import Auth from '@aws-amplify/auth';
-import SampleApiClient from 'sample-api-client';
 
 class ApiService {
-  constructor() {
-    this.client = new SampleApiClient.DefaultApi();
-    this.client.apiClient.basePath = '/v1';
-  }
-
-  _makeRefreshedRequest(makeRequest, ...params) {
+  _makeRefreshedRequest(path, method, data) {
     return Auth.currentSession().then((authData) => {
-      const apiClientInstance = SampleApiClient.ApiClient.instance;
-      apiClientInstance.authentications.AuthToken.apiKey = authData.idToken.jwtToken;
-      return makeRequest.call(this.client, ...params);
+      const options = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `${authData.idToken.jwtToken}`
+        }
+      };
+
+      if(_.includes(['PUT', 'POST'], method)) {
+        options.body = JSON.stringify(data)
+      }
+
+      return fetch(`v1/${path}`, options)
+        .then(res => res.json());
     });
   }
 
   getAll(model) {
-    return this._makeRefreshedRequest(this.client[`${model}Get`]);
+    return this._makeRefreshedRequest(model, 'GET');
   }
 
   update(model, id, data) {
-    return this._makeRefreshedRequest(this.client[`${model}IdPut`], id, data);
+    return this._makeRefreshedRequest(`${model}/${id}`, 'PUT', data);
   }
 
   create(model, data) {
-    return this._makeRefreshedRequest(this.client[`${model}Post`], data);
+    return this._makeRefreshedRequest(model, 'POST', data);
   }
 
   destroy(model, id) {
-    return this._makeRefreshedRequest(this.client[`${model}IdDelete`], id);
+    return this._makeRefreshedRequest(`${model}/${id}`, 'DELETE');
   }
 
   get(model, id) {
