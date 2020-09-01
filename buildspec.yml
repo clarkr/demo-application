@@ -1,0 +1,22 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - echo "Pre-Build Phase..."
+      - node -v
+      - npm -v
+      - npm install
+  build:
+    commands:
+      - echo "Build Phase..."
+      - npm run test:ci
+      - npm run build
+  post_build:
+    commands:
+      - echo "Post-Build Phase..."
+cache:
+  paths:
+    - "node_modules/**/*"
+artifacts:
+  files:
+    - build/**/*
