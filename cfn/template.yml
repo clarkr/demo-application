@@ -1,0 +1,127 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Sets up static, secure website via s3, CloudFront and ACM
+
+Parameters:
+  CertificateArn:
+    Description: Certificate ARN
+    Type: String
+  DomainName:
+    Description: Apex domain
+    Type: String
+  SubDomain:
+    Description: Subdomain
+    Type: String
+  ApiStackName:
+    Description: The API stack name
+    Type: String
+  ApiStage:
+    Default: /api
+    Description: The API stage name
+    Type: String
+
+Resources:
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - s3:GetObject
+            Effect: Allow
+            Resource: !Sub '${S3Bucket.Arn}/*'
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Project
+          Value: webapp
+
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'CloudFront OAI for ${SubDomain}.${DomainName}'
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Sub '${SubDomain}.${DomainName}'
+        CacheBehaviors:
+          - PathPattern: '/v1/*'
+            TargetOriginId: !Sub '${AWS::StackName}-api'
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT 
+              - PATCH
+              - POST 
+              - DELETE
+            ForwardedValues:
+              QueryString: false
+              Headers:
+                - Authorization
+                - Referer
+                - Accept
+            DefaultTTL: 0
+            MaxTTL: 0
+            MinTTL: 0
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: true
+          TargetOriginId: !Sub 'S3-${AWS::StackName}-root'
+          ViewerProtocolPolicy: 'redirect-to-https'
+        DefaultRootObject: 'index.html'
+        Enabled: true
+        Comment: !Sub '${SubDomain}.${DomainName}'
+        Origins:
+          - DomainName: !GetAtt S3Bucket.DomainName
+            OriginPath: '/build'
+            Id: !Sub 'S3-${AWS::StackName}-root'
+            S3OriginConfig:
+              OriginAccessIdentity:
+                !Join ['', ['origin-access-identity/cloudfront/', !Ref CloudFrontOriginAccessIdentity]]
+          - DomainName: 
+              Fn::Join:
+                - ""
+                - - Fn::ImportValue:
+                      !Sub "${ApiStackName}-api"
+                  - ".execute-api."
+                  - !Ref AWS::Region
+                  - ".amazonaws.com"
+            OriginPath: !Ref ApiStage
+            Id: !Sub '${AWS::StackName}-api'
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+        ViewerCertificate:
+          AcmCertificateArn: !Ref 'CertificateArn'
+          MinimumProtocolVersion: 'TLSv1.2_2018'
+          SslSupportMethod: 'sni-only'
+      Tags:
+        - Key: Project
+          Value: webapp
+
+Outputs:
+  AppBucketName:
+    Description: The bucket for static web resources
+    Export:
+      Name: !Sub "${AWS::StackName}Bucket"
+    Value: !Ref S3Bucket
+  AppBucketArn:
+    Description: The bucket arn for static web resources
+    Export:
+      Name: !Sub "${AWS::StackName}Arn"
+    Value: !GetAtt S3Bucket.Arn

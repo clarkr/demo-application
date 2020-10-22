@@ -1,0 +1,243 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Creates a SPA deployment pipeline with two environments: dev and prod"
+
+Parameters:
+  GitHubAccountName:
+    Description: GitHub account name
+    Type: String
+  GitHubRepositoryName:
+    Description: GitHub repo name
+    Type: String
+  GitHubRepositoryBranchName:
+    Description: GitHub repo branch name
+    Type: String
+    Default: master
+  DevStackName:
+    Description: The name of the dev cloudformation stack
+    Type: String
+  ProdStackName:
+    Description: The name of the prod cloudformation stack
+    Type: String
+  CodeBuildName:
+    Description: The name of the codebuild project
+    Default: app-build
+    Type: String
+
+Resources:
+  PipelineArtifacts:
+    Type: AWS::S3::Bucket
+    Properties:
+      Tags:
+        - Key: Project
+          Value: webapp
+
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ["sts:AssumeRole"]
+          Effect: Allow
+          Principal:
+            Service: [codepipeline.amazonaws.com]
+        Version: "2012-10-17"
+      Path: /
+      Policies:
+        - PolicyName: CodePipelineAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                - s3:PutObject
+                - s3:PutObjectAcl
+                - s3:GetObject
+                - s3:GetObjectVersion
+                - s3:GetBucketAcl
+                - s3:GetBucketLocation
+                Effect: Allow
+                Resource:
+                  - !Join 
+                    - ""
+                    - - !GetAtt PipelineArtifacts.Arn
+                      - "/*"
+                  - !Join 
+                    - ""
+                    - - Fn::ImportValue: !Sub "${DevStackName}Arn"
+                      - "/*"
+                  - !Join 
+                    - ""
+                    - - Fn::ImportValue: !Sub "${ProdStackName}Arn"
+                      - "/*"
+              - Action:
+                - codebuild:StartBuild
+                - codebuild:BatchGetBuilds
+                Effect: Allow
+                Resource: "*"
+      Tags:
+        - Key: Project
+          Value: webapp
+
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ["sts:AssumeRole"]
+          Effect: Allow
+          Principal:
+            Service: [codebuild.amazonaws.com]
+        Version: "2012-10-17"
+      Path: /
+      Policies:
+        - PolicyName: CodeBuildAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+                Effect: Allow
+                Resource:
+                  - !Join 
+                    - ""
+                    - - "arn:aws:logs:"
+                      - !Ref AWS::Region
+                      - ":"
+                      - !Ref AWS::AccountId
+                      - ":log-group:/aws/codebuild/"
+                      - !Ref CodeBuildName
+                      - ":*"
+              - Action:
+                - s3:PutObject
+                - s3:GetObject
+                - s3:GetObjectVersion
+                - s3:GetBucketAcl
+                - s3:GetBucketLocation
+                Effect: Allow
+                Resource:
+                  - !Join 
+                    - ""
+                    - - !GetAtt PipelineArtifacts.Arn
+                      - "/*"
+      Tags:
+        - Key: Project
+          Value: webapp
+
+  AppCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Ref CodeBuildName 
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: S3
+        Location: !GetAtt PipelineArtifacts.Arn
+        Packaging: ZIP
+        NamespaceType: BUILD_ID
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: PACKAGE_BUCKET 
+            Type: PLAINTEXT
+            Value: !Ref PipelineArtifacts
+      Source:
+        Auth:
+          Type: OAUTH
+        Location: https://github.com/clarkr/demo-application.git
+        Type: GITHUB
+      Tags:
+        - Key: Project
+          Value: webapp
+
+  AppPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: app-pipeline
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref PipelineArtifacts
+      Stages:
+        - 
+          Name: Source
+          Actions: 
+            - 
+              Name: Source
+              ActionTypeId: 
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              OutputArtifacts: 
+                - Name: SourceArtifact
+              Configuration: 
+                Owner: !Ref GitHubAccountName
+                Repo: !Ref GitHubRepositoryName
+                PollForSourceChanges: "false"
+                Branch: !Ref GitHubRepositoryBranchName
+                OAuthToken: "{{resolve:secretsmanager:PersonalProjectCodePipelineDeployKey:SecretString:token}}"
+        - 
+          Name: BuildAndTest
+          Actions: 
+            -
+              Name: RunBuild
+              InputArtifacts: 
+                - Name: SourceArtifact
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildName
+              OutputArtifacts:
+                - Name: AppBundle
+        - 
+          Name: DeployDev
+          Actions: 
+            -
+              Name: DeployDevAction
+              InputArtifacts: 
+                - Name: AppBundle
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: S3
+              Configuration:
+                BucketName:
+                  Fn::ImportValue:
+                    !Sub "${DevStackName}Bucket"
+                Extract: true
+        - 
+          Name: DeployProduction
+          Actions: 
+            -
+              Name: ApproveProduction
+              ActionTypeId:
+                Category: Approval
+                Version: 1
+                Owner: AWS
+                Provider: Manual
+              RunOrder: 1
+            -
+              Name: DeployProduction
+              InputArtifacts: 
+                - Name: AppBundle
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: S3
+              Configuration:
+                BucketName:
+                  Fn::ImportValue:
+                    !Sub "${ProdStackName}Bucket"
+                Extract: true
+              RunOrder: 2
+      Tags:
+        - Key: Project
+          Value: webapp
+
